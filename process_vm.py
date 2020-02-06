@@ -35,8 +35,6 @@ files = sorted(glob.glob("*"))
 
 metrics = [['pageLoadTime', "data[0]['statistics']['timings']['pageTimings']", "['pageLoadTime']"],
 
-          ['relLageLoadTime', "data[0]['statistics']['timings']['pageTimings']", "['relPageLoadTime']"],
-
           ['speedIndex', "data[0]['statistics']['visualMetrics']", "['SpeedIndex']"],
           ['contentfulSpeedIndex', "data[0]['statistics']['visualMetrics']", "['ContentfulSpeedIndex']"],
           ['perceptualSpeedIndex', "data[0]['statistics']['visualMetrics']", "['PerceptualSpeedIndex']"],
@@ -66,10 +64,8 @@ metrics = [['pageLoadTime', "data[0]['statistics']['timings']['pageTimings']", "
           ['serverResponseTime', "data[0]['statistics']['timings']['pageTimings']", "['serverResponseTime']"],
 
           ['domInteractiveTime', "data[0]['statistics']['timings']['pageTimings']", "['domInteractiveTime']"],
-          ['relDomInteractiveTime', "data[0]['statistics']['timings']['pageTimings']", "['relDomInteractiveTime']"],
 
           ['domContentLoadedTime', "data[0]['statistics']['timings']['pageTimings']", "['domContentLoadedTime']"],
-          ['relDomContentLoadedTime', "data[0]['statistics']['timings']['pageTimings']", "['relDomContentLoadedTime']"],
 
           ['frontEndTime', "data[0]['statistics']['timings']['pageTimings']", "['frontEndTime']"],
 
@@ -212,22 +208,61 @@ for metric in metrics:
 
   print("Mean | ", end="")
   for v,v2 in enumerate(variants):
-    baseLineMeanOfMeans = statistics.mean(variants[0].means) if len(variants[0].means) != 0 else 1.0
-    baseLineMeanOfMedians = statistics.mean(variants[0].medians) if len(variants[0].medians) != 0 else 1.0 
-
     meanOfMeans = statistics.mean(variants[v].means) if len(variants[v].means) != 0 else 0.0 
     meanOfRelStdDevs = statistics.mean(variants[v].relStdDevs) if len(variants[v].relStdDevs) != 0 else 0.0 
     print ("%4.2f"% meanOfMeans +  " | ", end="")
     print ("%4.4f"% meanOfRelStdDevs +  " | ", end="")
     if (v != 0):
-      meanSpeedup = (baseLineMeanOfMeans - meanOfMeans)/baseLineMeanOfMeans
+      meanSpeedup = statistics.mean(variants[v].meanSpeedups) if len(variants[v].meanSpeedups) != 0 else 0.0 
       print ("%4.4f"% meanSpeedup + " | ", end="")
 
     meanOfMedians = statistics.mean(variants[v].medians) if len(variants[v].medians) != 0 else 0.0 
     print ("%4.2f"% meanOfMedians +  " | ", end="")
     if (v != 0):
-      medianSpeedup = (baseLineMeanOfMedians - meanOfMedians)/baseLineMeanOfMedians
+      medianSpeedup = statistics.mean(variants[v].medianSpeedups) if len(variants[v].medianSpeedups) != 0 else 0.0 
       print ("%4.4f"% medianSpeedup + " | ", end="")
+  print("")
+
+  print("Median | ", end="")
+  for v,v2 in enumerate(variants):
+    meanOfMeans = statistics.median(variants[v].means) if len(variants[v].means) != 0 else 0.0 
+    meanOfRelStdDevs = statistics.median(variants[v].relStdDevs) if len(variants[v].relStdDevs) != 0 else 0.0 
+    print ("%4.2f"% meanOfMeans +  " | ", end="")
+    print ("%4.4f"% meanOfRelStdDevs +  " | ", end="")
+    if (v != 0):
+      meanSpeedup = statistics.median(variants[v].meanSpeedups) if len(variants[v].meanSpeedups) != 0 else 0.0 
+      print ("%4.4f"% meanSpeedup + " | ", end="")
+
+    meanOfMedians = statistics.median(variants[v].medians) if len(variants[v].medians) != 0 else 0.0 
+    print ("%4.2f"% meanOfMedians +  " | ", end="")
+    if (v != 0):
+      medianSpeedup = statistics.median(variants[v].medianSpeedups) if len(variants[v].medianSpeedups) != 0 else 0.0 
+      print ("%4.4f"% medianSpeedup + " | ", end="")
+  print("")
+
+  # geomean can only be calculated on numbers > 0 (and there are some other constraints)
+  # values are in the range -N.0 (-N00%) to +1.0 (100%)
+  # remap -N% to be 0-1.0, and N% to be 1.0-M.   When outputting, subtract the 1.0
+  print("Geomean | ", end="")
+  for v,v2 in enumerate(variants):
+    meanOfMeans = gmean(variants[v].means) if len(variants[v].means) != 0 else 0.0 
+    meanOfRelStdDevs = gmean(variants[v].relStdDevs) if len(variants[v].relStdDevs) != 0 else 0.0 
+    print ("%4.2f"% meanOfMeans +  " | ", end="")
+    print ("%4.4f"% meanOfRelStdDevs +  " | ", end="")
+    if (v != 0):
+      for l in range(len(variants[v].meanSpeedups)):
+        variants[v].meanSpeedups[l] = (-variants[v].meanSpeedups[l]) + 1
+      meanSpeedup = gmean(variants[v].meanSpeedups) if len(variants[v].meanSpeedups) != 0 else 0.0 
+      print ("%4.4f"% -(meanSpeedup-1) + " | ", end="")
+
+    meanOfMedians = gmean(variants[v].medians) if len(variants[v].medians) != 0 else 0.0 
+    print ("%4.2f"% meanOfMedians +  " | ", end="")
+    if (v != 0):
+      for l in range(len(variants[v].medianSpeedups)):
+        variants[v].medianSpeedups[l] = (-variants[v].medianSpeedups[l]) + 1
+      medianSpeedup = gmean(variants[v].medianSpeedups) if len(variants[v].medianSpeedups) != 0 else 0.0 
+      print ("%4.4f"% -(medianSpeedup-1) + " | ", end="")
+
 
   print("")
   print("")
