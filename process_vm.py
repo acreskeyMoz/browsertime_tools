@@ -67,6 +67,7 @@ metrics = [['pageLoadTime', "data[0]['statistics']['timings']['pageTimings']", "
 
           ['domContentLoadedTime', "data[0]['statistics']['timings']['pageTimings']", "['domContentLoadedTime']"],
 
+          ['backEndTime', "data[0]['statistics']['timings']['pageTimings']", "['backEndTime']"],
           ['frontEndTime', "data[0]['statistics']['timings']['pageTimings']", "['frontEndTime']"],
 
           ['duration', "data[0]['statistics']['timings']['navigationTiming']", "['duration']"]]
