@@ -155,7 +155,7 @@ for metric in metrics:
     baseValueMean = 0
     baseValueMedian = 0
     if debug : print 
-    print("%-80.80s"% sortedResults[j][0]["url"], end="")
+    print("%s"% sortedResults[j][0]["url"], end="")
     print("| ", end="")
     for i,instance in enumerate(sortedResults[j]):
       if i > 0 and instance['timestamp'] < sortedResults[j][i-1]['timestamp']:
