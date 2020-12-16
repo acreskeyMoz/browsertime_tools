@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from __future__ import print_function
 
+import argparse
 import fnmatch
 import glob
 import json
@@ -29,7 +29,27 @@ class VariantResults:
     self.meanSpeedups = []
     self.medianSpeedups = []
     
-path = sys.argv[1]
+global options
+parser = argparse.ArgumentParser(
+    description="",
+    prog="process_vm",
+)
+
+parser.add_argument(
+    "path",
+    help="Path to the browsertime files",
+)
+parser.add_argument(
+    "--debug",
+    action="store_true",
+    default=False,
+    help="enable printing of debugging details",
+)
+options = parser.parse_args()
+
+debug = options.debug
+path = options.path
+
 os.chdir(path);
 files = sorted(glob.glob("*"))
 
