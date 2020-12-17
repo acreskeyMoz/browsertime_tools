@@ -152,7 +152,7 @@ for url in files:
                       if float(instance[metric[0] + "Mean"]) == 0:
                         instance[metric[0] + "RelStddev"] = 0.0
                       else:
-                        instance[metric[0] + "RelStddev"] = float(instance[metric[0] + "Stddev"]) / float(instance[metric[0] + "Mean"])
+                        instance[metric[0] + "RelStddev"] = float(instance[metric[0] + "Stddev"]) / float(instance[metric[0] + "Mean"]) * 100.0
                       instance[metric[0] + "Median"] = eval(metric[1] + metric[2] + "['median']")
               instance['value']                              = session
               instance['timestamp']                          = data[0]['info']['timestamp']
@@ -204,7 +204,6 @@ for metric in metrics:
     baseValueMedian = 0
     if debug : print 
     print("%s"% sortedResults[j][0]["url"], end="")
-    #print("%s"% sortedResults[j][0]["url"],  "|" + sortedResults[j][0]["lcpTagName"], "|" + sortedResults[j][0]["lcpContent"], end="")
     print("| ", end="")
     for i,instance in enumerate(sortedResults[j]):
       if i > 0 and instance['timestamp'] < sortedResults[j][i-1]['timestamp']:
@@ -215,8 +214,7 @@ for metric in metrics:
       # 90% confidence interval
       print("%s"% instance[ciIndex]   + "|", end="")
 
-      #print("%4.0f"% instance[stddevIndex] + "| ", end="")
-      print("%4.4f"% instance[relstddevIndex] + "| ", end="")
+      print("%4.2f"% instance[relstddevIndex] + "%| ", end="")
 
       # Update variant values (i.e. columns)
       if len(variants) <= i: variants.append(VariantResults())
@@ -234,15 +232,14 @@ for metric in metrics:
         baseValueMean   = instance[meanIndex]
         baseValueMedian = instance[medianIndex]
       else:
-        delta = (baseValueMean-instance[meanIndex])
         if baseValueMean != 0 and instance[meanIndex] != 0:
           speedup = (float(baseValueMean) - float(instance[meanIndex]))/float(baseValueMean)
           speedups.append( speedup )
         else:
-          speedup = 0
+          speedup = 0.0
           speedups.append(0)
         variants[i].meanSpeedups.append(speedup)
-        print("%6.4f"% speedup + " | " , end="")
+        print("%6.2f"% (speedup*100.0) + "% | " , end="")
 
       print("   %4.0f"%  instance[medianIndex]   + " |  ", end="")
       
@@ -252,10 +249,9 @@ for metric in metrics:
         if baseValueMedian != 0 and instance[medianIndex] != 0:
           speedup = (float(baseValueMedian) - float(instance[medianIndex]))/float(baseValueMedian)
         else:
-          delta = 0
           speedup = 0
         variants[i].medianSpeedups.append(speedup)
-        print("%6.4f"% speedup + "", end="")
+        print("%4.2f"% (speedup*100.0) + "%", end="")
         print(" |", end="")
 
     print("")
@@ -266,16 +262,16 @@ for metric in metrics:
     meanOfRelStdDevs = statistics.mean(variants[v].relStdDevs) if len(variants[v].relStdDevs) != 0 else 0.0 
     print ("%4.2f"% meanOfMeans +  " | ", end="")
     print ("- | ", end="") # skip CI
-    print ("%4.4f"% meanOfRelStdDevs +  " | ", end="")
+    print ("%4.2f"% meanOfRelStdDevs +  "% | ", end="")
     if (v != 0):
       meanSpeedup = statistics.mean(variants[v].meanSpeedups) if len(variants[v].meanSpeedups) != 0 else 0.0 
-      print ("%4.4f"% meanSpeedup + " | ", end="")
+      print ("%4.2f"% (meanSpeedup*100.0) + "% | ", end="")
 
     meanOfMedians = statistics.mean(variants[v].medians) if len(variants[v].medians) != 0 else 0.0 
     print ("%4.2f"% meanOfMedians +  " | ", end="")
     if (v != 0):
       medianSpeedup = statistics.mean(variants[v].medianSpeedups) if len(variants[v].medianSpeedups) != 0 else 0.0 
-      print ("%4.4f"% medianSpeedup + " | ", end="")
+      print ("%4.2f"% (medianSpeedup*100.0) + "% | ", end="")
   print("")
 
   print("Median | ", end="")
@@ -284,16 +280,16 @@ for metric in metrics:
     meanOfRelStdDevs = statistics.median(variants[v].relStdDevs) if len(variants[v].relStdDevs) != 0 else 0.0 
     print ("%4.2f"% meanOfMeans +  " | ", end="")
     print ("- | ", end="") # skip CI
-    print ("%4.4f"% meanOfRelStdDevs +  " | ", end="")
+    print ("%4.2f"% meanOfRelStdDevs +  "% | ", end="")
     if (v != 0):
       meanSpeedup = statistics.median(variants[v].meanSpeedups) if len(variants[v].meanSpeedups) != 0 else 0.0 
-      print ("%4.4f"% meanSpeedup + " | ", end="")
+      print ("%4.2f"% (meanSpeedup*100.0) + "% | ", end="")
 
     meanOfMedians = statistics.median(variants[v].medians) if len(variants[v].medians) != 0 else 0.0 
     print ("%4.2f"% meanOfMedians +  " | ", end="")
     if (v != 0):
       medianSpeedup = statistics.median(variants[v].medianSpeedups) if len(variants[v].medianSpeedups) != 0 else 0.0 
-      print ("%4.4f"% medianSpeedup + " | ", end="")
+      print ("%4.2f"% (medianSpeedup*100.0) + "% | ", end="")
   print("")
 
   # geomean can only be calculated on numbers > 0 (and there are some other constraints)
@@ -305,12 +301,12 @@ for metric in metrics:
     meanOfRelStdDevs = gmean(variants[v].relStdDevs) if len(variants[v].relStdDevs) != 0 else 0.0 
     print ("%4.2f"% meanOfMeans +  " | ", end="")
     print ("- | ", end="") # skip CI
-    print ("%4.4f"% meanOfRelStdDevs +  " | ", end="")
+    print ("%4.2f"% meanOfRelStdDevs +  "% | ", end="")
     if (v != 0):
       for l in range(len(variants[v].meanSpeedups)):
         variants[v].meanSpeedups[l] = (-variants[v].meanSpeedups[l]) + 1
       meanSpeedup = gmean(variants[v].meanSpeedups) if len(variants[v].meanSpeedups) != 0 else 0.0 
-      print ("%4.4f"% -(meanSpeedup-1) + " | ", end="")
+      print ("%4.4f"% -((meanSpeedup-1)*100.0) + "% | ", end="")
 
     meanOfMedians = gmean(variants[v].medians) if len(variants[v].medians) != 0 else 0.0 
     print ("%4.2f"% meanOfMedians +  " | ", end="")
@@ -318,7 +314,7 @@ for metric in metrics:
       for l in range(len(variants[v].medianSpeedups)):
         variants[v].medianSpeedups[l] = (-variants[v].medianSpeedups[l]) + 1
       medianSpeedup = gmean(variants[v].medianSpeedups) if len(variants[v].medianSpeedups) != 0 else 0.0 
-      print ("%4.4f"% -(medianSpeedup-1) + " | ", end="")
+      print ("%4.2f"% -((medianSpeedup-1)*100.0) + "% | ", end="")
 
 
   print("")
