@@ -27,6 +27,12 @@ class VariantResults:
     self.meanSpeedups = []
     self.medianSpeedups = []
 
+def do_confidence_intervals_overlap(intervalA, intervalB):
+  if intervalB[1] < intervalA[0] or intervalA[1] <  intervalB[0]:
+     return False
+
+  return True
+
 global options
 parser = argparse.ArgumentParser(
     description="",
@@ -134,8 +140,7 @@ for url in files:
                       instance[metric[0] + "Median"] = 0
                   else:
                       instance[metric[0] + "Mean"] = eval(metric[1] + metric[2] + "['mean']")
-                      # sample size, mean, std dev 
-                      #instance[metric[0] + "ConfidenceInterval"] = 
+
                       confidence_level = 0.90
                       degrees_freedom = n - 1
                       sample_mean = instance[metric[0] + "Mean"]
@@ -143,11 +148,7 @@ for url in files:
 
                       confidence_interval = scipy.stats.t.interval(confidence_level, degrees_freedom, sample_mean, std_error_of_the_mean)
 
-                      confidence_interval_str = "[%4.0f, %4.0f]" % (confidence_interval[0], confidence_interval[1])
-
-                      if debug: print("confidence interval: " + confidence_interval_str)
-                      
-                      instance[metric[0] + "ConfidenceInterval"] = confidence_interval_str
+                      instance[metric[0] + "ConfidenceIntervalTuple"] = confidence_interval
                       instance[metric[0] + "Stddev"] = eval(metric[1] + metric[2] + "['stddev']")
                       if float(instance[metric[0] + "Mean"]) == 0:
                         instance[metric[0] + "RelStddev"] = 0.0
@@ -174,7 +175,7 @@ for metric in metrics:
   meanIndex = metric[0] + "Mean"
   medianIndex = metric[0] + "Median"
   stddevIndex = metric[0] + "Stddev"
-  ciIndex = metric[0] + "ConfidenceInterval"
+  ciTupleIndex = metric[0] + "ConfidenceIntervalTuple"
   relstddevIndex = metric[0] + "RelStddev"
 
   print(metric[0] + ":   |", end="")
@@ -182,7 +183,6 @@ for metric in metrics:
     if debug: print("\nmetrics for " + instance['url'])
     if i == 0:
       print(instance['mode'] + " | | | | ", end="")
-      #print(" | | " + instance['mode'] + " | | | ", end="")
     else:
       print(instance['mode'] + " | | | | | | ", end="")
 
@@ -191,7 +191,6 @@ for metric in metrics:
   for i,instance in enumerate(sortedResults[0]):
     if i == 0:
       print("| Mean |90% confidence interval| Rel Std Dev | Median | ", end="")
-      #print("| | | Mean | Rel Std Dev | Median | ", end="")
     else:
       print("Mean |90% confidence interval| Rel Std Dev | Improvement relative to baseline | Median | Improvement relative to baseline | ", end="")
 
@@ -211,14 +210,8 @@ for metric in metrics:
 
       print("%4.0f"% instance[meanIndex]   + "|", end="")
 
-      # 90% confidence interval
-      print("%s"% instance[ciIndex]   + "|", end="")
-
-      print("%4.2f"% instance[relstddevIndex] + "%| ", end="")
-
       # Update variant values (i.e. columns)
       if len(variants) <= i: variants.append(VariantResults())
-
       if instance[meanIndex] != 0:
         variants[i].means.append(instance[meanIndex])
       if instance[stddevIndex] != 0:
@@ -226,18 +219,33 @@ for metric in metrics:
       if instance[relstddevIndex] != 0:
         variants[i].relStdDevs.append(instance[relstddevIndex])
       if instance[medianIndex] != 0:
-        variants[i].medians.append(instance[medianIndex])          
+        variants[i].medians.append(instance[medianIndex])
 
+      # Store baseline values and determine if changes are statistically significant
+      significant = False
       if i == 0:
         baseValueMean   = instance[meanIndex]
         baseValueMedian = instance[medianIndex]
+        baseConfidenceInterval = instance[ciTupleIndex]
       else:
         if baseValueMean != 0 and instance[meanIndex] != 0:
           speedup = (float(baseValueMean) - float(instance[meanIndex]))/float(baseValueMean)
           speedups.append( speedup )
+          significant = do_confidence_intervals_overlap(baseConfidenceInterval, instance[ciTupleIndex]) == False
         else:
           speedup = 0.0
           speedups.append(0)
+
+      # 90% confidence interval
+      confidence_interval_str = "[%4.0f, %4.0f]" % (instance[ciTupleIndex][0], instance[ciTupleIndex][1])
+      # prepend '*' to significance via confidence intervals not overlapping
+      if significant:
+        print("*", end="")
+      
+      print("%s"% confidence_interval_str + "|", end="")
+      print("%4.2f"% instance[relstddevIndex] + "%| ", end="")
+
+      if i != 0:
         variants[i].meanSpeedups.append(speedup)
         print("%6.2f"% (speedup*100.0) + "% | " , end="")
 
