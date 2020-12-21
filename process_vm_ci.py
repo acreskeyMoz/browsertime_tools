@@ -134,10 +134,11 @@ for url in files:
               for metric in metrics:
                   if eval(metric[2])[0] not in eval(metric[1]):
                       instance[metric[0] + "Mean"] = 0
-                      instance[metric[0] + "ConfidenceInterval"] = 0
+                      instance[metric[0] + "ConfidenceIntervalTuple"] = (0,0)
                       instance[metric[0] + "Stddev"] = 0
                       instance[metric[0] + "RelStddev"] = 0
                       instance[metric[0] + "Median"] = 0
+                      if debug: print("\n Missing metric " + metric[0] + " for " + data[0]['info']['url'] + ", " + result)
                   else:
                       instance[metric[0] + "Mean"] = eval(metric[1] + metric[2] + "['mean']")
 
